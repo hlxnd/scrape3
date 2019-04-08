@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <!--Fontawesome-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+    <title>Houses / Geneve</title>
+  </head>
+  <body style="padding-top: 5rem;">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.3.0/vue.js"></script>
+
+
+
+
+    <div class="container" id="app">
+
+        <div>
+
+                <nav class="navbar navbar-expand-md bg-dark fixed-top">
+        <form class="form-inline my-2 my-lg-0">
+      <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search" v-model="search">
+    </form>            
+        </nav>
+        
+            <table class="table table-striped">
+                <template v-for="udata in filteredItems">
+                <tr data-toggle="modal" data-target="#myModal" v-on:click="selected=udata">
+                    <td><img :src=udata.preview style="width:150px;height:100px;object-fit: contain;" class="img-thumbnail"></td>
+                    <td><strong><i class="fas fa-home" v-if="udata.type=='House'">&nbsp;</i>{{udata.price}} {{udata.currency}}, {{udata.surface}}</strong>
+                        <br>{{udata.title}}<br>{{udata.rooms}} rooms<br>
+                        Available: {{ udata.available }}</td>
+                    <td>{{udata.city}}<br>{{udata.location}}</td>
+                    <td>{{udata.date}}<br><br>{{udata.source}}</td>
+                </tr>
+            </template>
+            </table>
+        </div> 
+
+
+
+          <!-- Modal content-->
+          <div class="modal" id="myModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document" style="max-width: 1000px;">
+                  <div class="modal-content"  v-if="selected!=null">
+                    <div class="modal-header">
+                      <h5 class="modal-title"><strong>{{selected.title}}</strong></h5>
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            <strong>Price:</strong> {{selected.price}} {{selected.currency}}<br>
+                            <strong>Size:</strong> {{selected.surface}}<br>
+                            <strong>Rooms:</strong> {{selected.rooms}}<br>
+                            <strong>Location:</strong> {{selected.location}}, {{selected.city}}<br>
+                            <strong>Contact:</strong> {{selected.contact}}<br>
+                            <strong>Source:</strong> {{selected.source}} on {{selected.date}}<br>
+                        </p>
+                        <p v-html="selected.description"></p>
+                        <p  v-for="pic in selected.pics">
+                            <img :src=pic style="max-width: 100%; max-height: 100%;" class="mx-auto d-block" >
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+    
+
+
+
+    </div>
+        
+        
+        <script>
+        
+        function normalize(data,source) {
+            if (source==="GLOCALS") {
+                data.pics=[];
+                if (data.photo1!=0)
+                    data.pics.push("https://cdn.glocals.com/sites/glocals" +data.photo1);
+                if (data.photo2!=0)
+                    data.pics.push("https://cdn.glocals.com/sites/glocals" +data.photo2);
+                if (data.photo3!=0)
+                    data.pics.push("https://cdn.glocals.com/sites/glocals" +data.photo3);
+                if (data.photo4!=0)
+                    data.pics.push("https://cdn.glocals.com/sites/glocals" +data.photo4);
+                data.preview=data.pics[0];
+
+                data.surface="";
+                let result=/([0-9]+)[ ]*(m2|m²|sqm)/.exec(data.title+" "+data.description);
+                if (result!=null)
+                    data.surface=result[1]+"m²";
+
+                data.price=Number(data.price).toLocaleString();
+
+                data.type="?";
+                let lcTitle=data.title.toLowerCase();
+                if (/appart|apartm|flat|duplex/.test(lcTitle))
+                    data.type="Apartment";
+                else if (/house|villa/.test(lcTitle))
+                    data.type="House";
+
+                data.source="glocals.com";
+        
+                return data;
+            }
+        }
+        
+        
+        
+        var dataURL = 'glocals.json?01245';
+        var App = new Vue({
+          el: '#app',
+          data: {
+              search: '',
+              selected: null,
+            houseData: [] // initialize empty array
+          },
+          computed: {
+            filteredItems() {
+                return this.houseData.filter(item => {
+                    let searchTerms=this.search.toLowerCase().split(" ");
+                    let searchString=item.title+" "+item.type+" "+item.location+" "+item.city;
+
+                    for (var i = 0; i < searchTerms.length; i++) {
+                        if (searchString.toLowerCase().indexOf(searchTerms[i]) < 0)
+                            return false
+                    }
+                    return true;
+              })
+            }
+          },
+          mounted() { // when the Vue app is booted up, this is run automatically.
+            var self = this // create a closure to access component in the callback below
+            $.getJSON(dataURL, function(data) {
+              self.houseData = data.classifieds
+                .map(x => normalize(x,"GLOCALS"))
+                .filter(x => Number(x.rooms)>4); ;
+            });
+          }
+        })       
+        </script>  
+        
+
+
+
+
+<!-- Modal -->
+<!-- <div class="modal fade" id="myModal" role="dialog">
+        <div class="modal-dialog">
+        
+
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <!--<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>
+
+
+
+
