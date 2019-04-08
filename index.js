@@ -1,6 +1,7 @@
 const axios = require('axios') 
 const querystring = require('querystring');
 const fs = require('fs');
+const seloger = require('./seloger.js');
 
 function getData() {
     let queryParameters=querystring.stringify({
@@ -49,12 +50,18 @@ function putDataInFile(filePath,data) {
     })
 }
 
+async function loadDataFromGlocals() {
+    let result=await getDataFromFile("E:\\develop\\private\\scrape3\\glocals.json");
+    //let result=await getData();
+    //putDataInFile("E:\\develop\\private\\scrape3\\glocals.json",result);
+    parseData(result);
+}
+
 async function main() {
     try {
-        //let result=await getDataFromFile("E:\\develop\\private\\scrape3\\glocals.json");
-        let result=await getData();
-        putDataInFile("E:\\develop\\private\\scrape3\\glocals.json",result);
-        parseData(result);
+        //loadDataFromGlocals();
+        seloger.getEntries()
+            .then(data => console.log(data));
     }
     catch (err) {
         console.log(err)
