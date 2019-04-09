@@ -2,6 +2,7 @@ const axios = require('axios')
 const querystring = require('querystring');
 const fs = require('fs');
 const seloger = require('./seloger.js');
+const leboncoin = require("./leboncoin.js")
 
 function getData() {
     let queryParameters=querystring.stringify({
@@ -60,12 +61,30 @@ async function loadDataFromGlocals() {
 async function main() {
     try {
         //loadDataFromGlocals();
-        seloger.getEntries()
-            .then(data => console.log(data));
+        //seloger.getEntries().then(data => console.log(data))
+        leboncoin.getEntries().then(data => console.log(data))
     }
     catch (err) {
         console.log(err)
     }
 }
 
-main();
+
+//main();
+
+const express = require('express')
+const app = express()
+const port = 3000
+
+app.get('/', async (req, res, next) => {
+    try {
+        //loadDataFromGlocals();
+        res.json(await leboncoin.getEntries());
+    }
+    catch (err) {
+        console.log(err)
+    }
+});
+
+app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+
